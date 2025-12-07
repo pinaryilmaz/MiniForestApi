@@ -1,23 +1,53 @@
 using Microsoft.AspNetCore.Mvc;
-using MiniForestApp.Models; // yine kendi namespace'ine göre düzelt
+using MiniForestApp.Models; 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks; 
+using Microsoft.EntityFrameworkCore; 
 
 [ApiController]
 [Route("[controller]")]
 public class FocusController : ControllerBase
 {
-    // Verileri RAM'de tutan static liste
-    private static List<FocusSession> sessions = new List<FocusSession>();
+    private readonly MiniForestDbContext _context;
 
-    // GET /Focus
-    [HttpGet]
-    public IActionResult GetAll()
+    public FocusController(MiniForestDbContext context) 
+    {
+        _context = context;
+    }
+
+    // GET /Focus/completed - Bitmiş oturumları listele
+    [HttpGet("completed")]
+    public async Task<IActionResult> GetCompletedSessions()
     {
         try
         {
-            var result = sessions.Select(x => new FocusSessionDto(x)).ToList();
+            var completed = await _context.FocusSessions
+                .Where(x => x.IsCompleted)
+                .OrderByDescending(x => x.StartTime)
+                .Select(x => new FocusSessionDto(x))
+                .ToListAsync();
+
+            return Ok(Response<List<FocusSessionDto>>.Successful(completed));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(Response<List<FocusSessionDto>>.Fail(ex.Message));
+        }
+    }
+    
+    // GET /Focus - Tüm oturumları (devam edenler dahil) listele
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        try
+        {
+            var result = await _context.FocusSessions
+                                       .OrderByDescending(s => s.StartTime)
+                                       .Select(x => new FocusSessionDto(x))
+                                       .ToListAsync();
+
             return Ok(Response<List<FocusSessionDto>>.Successful(result));
         }
         catch (Exception ex)
@@ -26,26 +56,24 @@ public class FocusController : ControllerBase
         }
     }
 
-    // POST /Focus/start
+    // POST /Focus/start - Oturumu Başlat (ÇALIŞMA SORUNU GİDERİLDİ: [FromBody] EKLENDİ)
     [HttpPost("start")]
-    public IActionResult StartSession(StartFocusDto dto)
+    public async Task<IActionResult> StartSession([FromBody] StartFocusDto dto)
     {
         try
         {
             if (dto.DurationMinutes <= 0)
                 return BadRequest(Response<FocusSessionDto>.Fail("Süre 0'dan büyük olmalıdır."));
 
-            int newId = sessions.Any() ? sessions.Max(x => x.Id) + 1 : 1;
-
             var session = new FocusSession()
             {
-                Id = newId,
                 DurationMinutes = dto.DurationMinutes,
                 StartTime = DateTime.Now,
                 IsCompleted = false
             };
 
-            sessions.Add(session);
+            _context.FocusSessions.Add(session);
+            await _context.SaveChangesAsync();
 
             return Ok(Response<FocusSessionDto>.Successful(new FocusSessionDto(session)));
         }
@@ -55,21 +83,33 @@ public class FocusController : ControllerBase
         }
     }
 
-    // POST /Focus/finish/{id}
-    [HttpPost("finish/{id}")]
-    public IActionResult FinishSession(int id)
+    // POST /Focus/finish/{id} - Oturumu Bitir (ÇALIŞMA SORUNU VE ROTA ÇAKIŞMASI GİDERİLDİ)
+    [HttpPost("finish/{id:int}")] // Rota çakışmasını engeller
+    public async Task<IActionResult> FinishSession(int id)
     {
         try
         {
-            var found = sessions.FirstOrDefault(x => x.Id == id);
+            var found = await _context.FocusSessions.FindAsync(id);
+            
             if (found == null)
-                return BadRequest(Response<FocusSessionDto>.Fail("Oturum bulunamadı."));
+                return NotFound(Response<FocusSessionDto>.Fail("Oturum bulunamadı."));
 
-            if (!found.IsCompleted)
-            {
-                found.EndTime = DateTime.Now;
-                found.IsCompleted = true;
-            }
+            if (found.IsCompleted)
+                return BadRequest(Response<FocusSessionDto>.Fail("Oturum zaten tamamlanmış."));
+
+            // GERÇEK SÜRE HESAPLAMA MANTIĞI
+            DateTime now = DateTime.Now;
+            TimeSpan actualDuration = now - found.StartTime;
+            int completedMinutes = (int)Math.Round(actualDuration.TotalMinutes);
+            
+            if (completedMinutes < 0) completedMinutes = 0;
+
+            found.EndTime = now;
+            found.IsCompleted = true;
+            found.DurationMinutes = completedMinutes; // GERÇEK SÜREYİ KAYDET
+
+            _context.FocusSessions.Update(found);
+            await _context.SaveChangesAsync();
 
             return Ok(Response<FocusSessionDto>.Successful(new FocusSessionDto(found)));
         }
@@ -79,18 +119,17 @@ public class FocusController : ControllerBase
         }
     }
 
-    // GET /Focus/today
+    // GET /Focus/today - Bugün çalışılan toplam süreyi getirir
     [HttpGet("today")]
-    public IActionResult GetTodaySummary()
+    public async Task<IActionResult> GetTodaySummary()
     {
         try
         {
             var today = DateTime.Today;
-            var todaySessions = sessions
-                .Where(x => x.StartTime.Date == today && x.IsCompleted)
-                .ToList();
 
-            var total = todaySessions.Sum(x => x.DurationMinutes);
+            var total = await _context.FocusSessions
+                .Where(x => x.StartTime.Date == today && x.IsCompleted)
+                .SumAsync(x => x.DurationMinutes); 
 
             var dto = new TodaySummaryDto(today, total);
 
@@ -101,16 +140,17 @@ public class FocusController : ControllerBase
             return BadRequest(Response<TodaySummaryDto>.Fail(ex.Message));
         }
     }
-
-    // GET /Focus/{id}
-    [HttpGet("{id}")]
-    public IActionResult GetSession(int id)
+    
+    // GET /Focus/{id} - Tek bir oturumu getirir (ROTA ÇAKIŞMASI GİDERİLDİ)
+    [HttpGet("{id:int}")] // Rota çakışmasını engeller
+    public async Task<IActionResult> GetSession(int id)
     {
         try
         {
-            var found = sessions.FirstOrDefault(x => x.Id == id);
+            var found = await _context.FocusSessions.FindAsync(id);
+            
             if (found == null)
-                return BadRequest(Response<FocusSessionDto>.Fail("Oturum bulunamadı."));
+                return NotFound(Response<FocusSessionDto>.Fail("Oturum bulunamadı."));
 
             return Ok(Response<FocusSessionDto>.Successful(new FocusSessionDto(found)));
         }

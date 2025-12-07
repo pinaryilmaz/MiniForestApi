@@ -1,25 +1,28 @@
 {
   "format": 1,
   "restore": {
-    "/Users/pinar/MiniForestApi/MiniForestApi.csproj": {}
+    "C:\\Users\\Pinar\\Desktop\\MiniForestApi\\MiniForestApi\\MiniForestApi.csproj": {}
   },
   "projects": {
-    "/Users/pinar/MiniForestApi/MiniForestApi.csproj": {
+    "C:\\Users\\Pinar\\Desktop\\MiniForestApi\\MiniForestApi\\MiniForestApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/pinar/MiniForestApi/MiniForestApi.csproj",
+        "projectUniqueName": "C:\\Users\\Pinar\\Desktop\\MiniForestApi\\MiniForestApi\\MiniForestApi.csproj",
         "projectName": "MiniForestApi",
-        "projectPath": "/Users/pinar/MiniForestApi/MiniForestApi.csproj",
-        "packagesPath": "/Users/pinar/.nuget/packages/",
-        "outputPath": "/Users/pinar/MiniForestApi/obj/",
+        "projectPath": "C:\\Users\\Pinar\\Desktop\\MiniForestApi\\MiniForestApi\\MiniForestApi.csproj",
+        "packagesPath": "C:\\Users\\Pinar\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Pinar\\Desktop\\MiniForestApi\\MiniForestApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/pinar/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Pinar\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -52,13 +55,15 @@
               "target": "Package",
               "version": "[10.0.0, )"
             },
-            "Microsoft.EntityFrameworkCore.InMemory": {
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
               "target": "Package",
               "version": "[10.0.0, )"
             },
-            "Pomelo.EntityFrameworkCore.MySql": {
+            "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[9.0.0, )"
+              "version": "[10.0.0, )"
             }
           },
           "imports": [
@@ -80,7 +85,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

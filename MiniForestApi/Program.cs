@@ -1,7 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
-using MiniForestApp.Models; // kendi namespace'ine göre düzelt (aşağıda anlatıyorum)
+using MiniForestApp.Models; 
+using Microsoft.EntityFrameworkCore;
+using MiniForestApp.Models; 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<MiniForestDbContext>(options =>
+{
+    // SQL Server'ı kullanması için yapılandırıyoruz
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
 
 builder.Services.AddCors(options =>
 {
@@ -13,12 +22,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// EF YOK: AddDbContext kullanmıyoruz
-// builder.Services.AddDbContext<...>(...);
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
 
 if (!app.Environment.IsDevelopment())
 {
