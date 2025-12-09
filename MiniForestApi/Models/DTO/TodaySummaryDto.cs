@@ -1,14 +1,10 @@
 using System;
 
-public class TodaySummaryDto
+public class TodaySummaryDto(DateTime date, int totalMinutes)
 {
-    public DateTime Date { get; set; }
-    public int TotalMinutes { get; set; }
+    public DateTime Date { get; set; }=date;
+    public int TotalMinutes { get; set; }= totalMinutes;
 
-    public TodaySummaryDto(DateTime date, int totalMinutes)
-    {
-        Date = date;
-        TotalMinutes = totalMinutes;
-    }
+
 }
 
